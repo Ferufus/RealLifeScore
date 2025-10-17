@@ -10,29 +10,37 @@ struct GymView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color(red: 0.17, green: 0.17, blue: 0.17)
-                    .ignoresSafeArea()
+                // Dunkler Gradient wie im SleepView
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(red: 0.10, green: 0.10, blue: 0.15),
+                        Color(red: 0.05, green: 0.05, blue: 0.10)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
                 
                 ScrollView {
-                    VStack(spacing: 20) {
+                    VStack(spacing: 25) {
                         // Gym Schedule
-                        VStack(spacing: 15) {
+                        VStack(spacing: 20) {
                             Text("🏋️ Gym Schedule")
-                                .font(.system(size: 24, weight: .bold))
+                                .font(.system(size: 24, weight: .bold, design: .rounded))
                                 .foregroundColor(.white)
                             
                             HStack(spacing: 8) {
                                 ForEach(1...7, id: \.self) { day in
-                                    VStack(spacing: 8) {
+                                    VStack(spacing: 10) {
                                         Text(dayName(for: day))
-                                            .font(.system(size: 12, weight: .semibold))
+                                            .font(.system(size: 14, weight: .semibold, design: .rounded))
                                             .foregroundColor(.white)
                                         
                                         Button(action: {
                                             manager.toggleGymDay(day)
                                         }) {
                                             Image(systemName: manager.data.gymDays.contains(day) ? "checkmark.square.fill" : "square")
-                                                .font(.system(size: 24))
+                                                .font(.system(size: 28))
                                                 .foregroundColor(manager.data.gymDays.contains(day) ? .green : .gray)
                                         }
                                     }
@@ -40,43 +48,71 @@ struct GymView: View {
                                 }
                             }
                         }
-                        .padding()
-                        .background(Color(white: 0.22))
-                        .cornerRadius(12)
+                        .padding(20)
+                        .background(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color(red: 0.15, green: 0.15, blue: 0.20))
+                                .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+                        )
+                        .padding(.horizontal, 20)
                         
                         // Workout Actions
-                        VStack(spacing: 12) {
+                        VStack(spacing: 15) {
                             Button(action: {
                                 showingWorkoutSelection = true
                             }) {
-                                Text("Start Workout")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 15)
-                                    .background(Color.green)
-                                    .cornerRadius(12)
+                                HStack(spacing: 12) {
+                                    Image(systemName: "play.circle.fill")
+                                        .font(.system(size: 22, weight: .semibold))
+                                    
+                                    Text("Start Workout")
+                                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                                }
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 18)
+                                .background(
+                                    LinearGradient(
+                                        colors: [.green, .green.opacity(0.8)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .cornerRadius(16)
+                                .shadow(color: .green.opacity(0.4), radius: 8, x: 0, y: 4)
                             }
                             
                             Button(action: {
                                 showingWorkouts = true
                             }) {
-                                Text("My Workouts")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 15)
-                                    .background(Color.blue)
-                                    .cornerRadius(12)
+                                HStack(spacing: 12) {
+                                    Image(systemName: "list.bullet")
+                                        .font(.system(size: 22, weight: .semibold))
+                                    
+                                    Text("My Workouts")
+                                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                                }
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 18)
+                                .background(
+                                    LinearGradient(
+                                        colors: [.blue, .blue.opacity(0.8)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .cornerRadius(16)
+                                .shadow(color: .blue.opacity(0.4), radius: 8, x: 0, y: 4)
                             }
                         }
-                        .padding(.horizontal)
+                        .padding(.horizontal, 20)
                         
                         // Consistency Calendar
-                        VStack(spacing: 15) {
+                        VStack(spacing: 20) {
                             HStack {
                                 Text("📅 Workout Calendar")
-                                    .font(.system(size: 20, weight: .bold))
+                                    .font(.system(size: 20, weight: .bold, design: .rounded))
                                     .foregroundColor(.white)
                                 
                                 Spacer()
@@ -84,7 +120,7 @@ struct GymView: View {
                                 Button("Today") {
                                     selectedDate = Date()
                                 }
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.system(size: 16, weight: .semibold, design: .rounded))
                                 .foregroundColor(.blue)
                             }
                             
@@ -94,16 +130,21 @@ struct GymView: View {
                                 showingDateDetail: $showingDateDetail
                             )
                         }
-                        .padding()
-                        .background(Color(white: 0.22))
-                        .cornerRadius(12)
+                        .padding(20)
+                        .background(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color(red: 0.15, green: 0.15, blue: 0.20))
+                                .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+                        )
+                        .padding(.horizontal, 20)
                         
                         Spacer()
                     }
-                    .padding()
+                    .padding(.vertical, 20)
                 }
             }
             .navigationTitle("Gym Tracker")
+            .navigationBarTitleDisplayMode(.large)
             .sheet(isPresented: $showingWorkouts) {
                 WorkoutsListView(manager: manager)
             }
@@ -122,7 +163,6 @@ struct GymView: View {
     }
 }
 
-// Umbenannt von WorkoutCalendarView zu GymWorkoutCalendarView
 struct GymWorkoutCalendarView: View {
     @ObservedObject var manager: TimeTrackerManager
     @Binding var selectedDate: Date
@@ -133,25 +173,33 @@ struct GymWorkoutCalendarView: View {
     }
     
     var body: some View {
-        VStack(spacing: 15) {
+        VStack(spacing: 20) {
             // Month Header
             HStack {
                 Button(action: previousMonth) {
                     Image(systemName: "chevron.left")
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.white)
+                        .padding(8)
+                        .background(Color.white.opacity(0.1))
+                        .cornerRadius(8)
                 }
                 
                 Spacer()
                 
                 Text(monthYearString(from: selectedDate))
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
                 
                 Spacer()
                 
                 Button(action: nextMonth) {
                     Image(systemName: "chevron.right")
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.white)
+                        .padding(8)
+                        .background(Color.white.opacity(0.1))
+                        .cornerRadius(8)
                 }
             }
             
@@ -159,14 +207,14 @@ struct GymWorkoutCalendarView: View {
             HStack {
                 ForEach(weekdaySymbols(), id: \.self) { weekday in
                     Text(weekday)
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundColor(.white.opacity(0.7))
                         .frame(maxWidth: .infinity)
                 }
             }
             
             // Calendar Grid
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 10) {
                 ForEach(getDaysInMonth(), id: \.self) { date in
                     if date == nil {
                         Rectangle()
@@ -194,7 +242,7 @@ struct GymWorkoutCalendarView: View {
                                 }
                                 
                                 Text("\(Calendar.current.component(.day, from: currentDate))")
-                                    .font(.system(size: 14, weight: .semibold))
+                                    .font(.system(size: 14, weight: .semibold, design: .rounded))
                                     .foregroundColor(.white)
                             }
                             .frame(height: 40)
@@ -210,7 +258,7 @@ struct GymWorkoutCalendarView: View {
                         .fill(Color.green)
                         .frame(width: 8, height: 8)
                     Text("Workout")
-                        .font(.system(size: 12))
+                        .font(.system(size: 12, design: .rounded))
                         .foregroundColor(.white.opacity(0.7))
                 }
                 
@@ -219,7 +267,7 @@ struct GymWorkoutCalendarView: View {
                         .fill(Color.blue)
                         .frame(width: 8, height: 8)
                     Text("Today")
-                        .font(.system(size: 12))
+                        .font(.system(size: 12, design: .rounded))
                         .foregroundColor(.white.opacity(0.7))
                 }
                 
@@ -228,7 +276,7 @@ struct GymWorkoutCalendarView: View {
                         .fill(Color.blue.opacity(0.5))
                         .frame(width: 8, height: 8)
                     Text("Selected")
-                        .font(.system(size: 12))
+                        .font(.system(size: 12, design: .rounded))
                         .foregroundColor(.white.opacity(0.7))
                 }
             }
@@ -283,70 +331,180 @@ struct GymWorkoutCalendarView: View {
     }
 }
 
-// Date Workout Detail View
 struct DateWorkoutDetailView: View {
     @ObservedObject var manager: TimeTrackerManager
     let date: Date
     @Binding var isPresented: Bool
+    @State private var currentDisplayDate: Date
+    
+    init(manager: TimeTrackerManager, date: Date, isPresented: Binding<Bool>) {
+        self.manager = manager
+        self.date = date
+        self._isPresented = isPresented
+        self._currentDisplayDate = State(initialValue: date)
+    }
     
     var completedSessions: [CompletedWorkoutSession] {
-        manager.getCompletedSessionsForDate(date)
+        manager.getCompletedSessionsForDate(currentDisplayDate)
+    }
+    
+    var allWorkoutDates: [Date] {
+        manager.getWorkoutCompletionDates().sorted()
     }
     
     var body: some View {
         NavigationView {
             ZStack {
-                Color(red: 0.17, green: 0.17, blue: 0.17)
-                    .ignoresSafeArea()
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(red: 0.12, green: 0.12, blue: 0.15),
+                        Color(red: 0.08, green: 0.08, blue: 0.12)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
                 
-                if completedSessions.isEmpty {
-                    VStack(spacing: 15) {
-                        Image(systemName: "dumbbell.slash")
-                            .font(.system(size: 48))
-                            .foregroundColor(.white.opacity(0.3))
+                VStack(spacing: 0) {
+                    // Navigation Header with Swipe
+                    HStack {
+                        Button(action: navigateToPreviousWorkout) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(canNavigateToPrevious ? .blue : .gray)
+                                .padding(12)
+                                .background(Color.white.opacity(0.1))
+                                .cornerRadius(10)
+                        }
+                        .disabled(!canNavigateToPrevious)
                         
-                        Text("No workouts on this day")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.white)
+                        Spacer()
                         
-                        Text("\(formattedDate)")
-                            .font(.system(size: 14))
-                            .foregroundColor(.white.opacity(0.5))
-                    }
-                } else {
-                    ScrollView {
-                        VStack(spacing: 15) {
-                            ForEach(completedSessions) { session in
-                                if let workout = manager.data.workouts.first(where: { $0.id == session.workoutId }) {
-                                    CompletedWorkoutCard(session: session, workout: workout, manager: manager)
-                                }
+                        VStack(spacing: 4) {
+                            Text(formattedDate)
+                                .font(.system(size: 18, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                            
+                            if completedSessions.count > 0 {
+                                Text("\(completedSessions.count) workout\(completedSessions.count == 1 ? "" : "s")")
+                                    .font(.system(size: 14, design: .rounded))
+                                    .foregroundColor(.white.opacity(0.7))
                             }
                         }
+                        
+                        Spacer()
+                        
+                        Button(action: navigateToNextWorkout) {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(canNavigateToNext ? .blue : .gray)
+                                .padding(12)
+                                .background(Color.white.opacity(0.1))
+                                .cornerRadius(10)
+                        }
+                        .disabled(!canNavigateToNext)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    
+                    if completedSessions.isEmpty {
+                        VStack(spacing: 20) {
+                            Spacer()
+                            
+                            Image(systemName: "dumbbell.slash")
+                                .font(.system(size: 60))
+                                .foregroundColor(.white.opacity(0.3))
+                            
+                            VStack(spacing: 8) {
+                                Text("No workouts on this day")
+                                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                                    .foregroundColor(.white)
+                                
+                                Text("Swipe to navigate to days with workouts")
+                                    .font(.system(size: 14, design: .rounded))
+                                    .foregroundColor(.white.opacity(0.5))
+                                    .multilineTextAlignment(.center)
+                            }
+                            
+                            Spacer()
+                        }
                         .padding()
+                    } else {
+                        ScrollView {
+                            VStack(spacing: 16) {
+                                ForEach(completedSessions) { session in
+                                    if let workout = manager.data.workouts.first(where: { $0.id == session.workoutId }) {
+                                        CompletedWorkoutCard(session: session, workout: workout, manager: manager)
+                                    }
+                                }
+                            }
+                            .padding()
+                        }
                     }
                 }
             }
-            .navigationTitle(formattedDate)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
                         isPresented = false
                     }
+                    .foregroundColor(.blue)
                 }
             }
+            .gesture(
+                DragGesture()
+                    .onEnded { value in
+                        let horizontalAmount = value.translation.width
+                        if abs(horizontalAmount) > 50 {
+                            if horizontalAmount > 0 {
+                                navigateToPreviousWorkout()
+                            } else {
+                                navigateToNextWorkout()
+                            }
+                        }
+                    }
+            )
         }
+    }
+    
+    private var canNavigateToPrevious: Bool {
+        guard let currentIndex = allWorkoutDates.firstIndex(where: { Calendar.current.isDate($0, inSameDayAs: currentDisplayDate) }) else {
+            return false
+        }
+        return currentIndex > 0
+    }
+    
+    private var canNavigateToNext: Bool {
+        guard let currentIndex = allWorkoutDates.firstIndex(where: { Calendar.current.isDate($0, inSameDayAs: currentDisplayDate) }) else {
+            return false
+        }
+        return currentIndex < allWorkoutDates.count - 1
+    }
+    
+    private func navigateToPreviousWorkout() {
+        guard let currentIndex = allWorkoutDates.firstIndex(where: { Calendar.current.isDate($0, inSameDayAs: currentDisplayDate) }),
+              currentIndex > 0 else { return }
+        
+        currentDisplayDate = allWorkoutDates[currentIndex - 1]
+    }
+    
+    private func navigateToNextWorkout() {
+        guard let currentIndex = allWorkoutDates.firstIndex(where: { Calendar.current.isDate($0, inSameDayAs: currentDisplayDate) }),
+              currentIndex < allWorkoutDates.count - 1 else { return }
+        
+        currentDisplayDate = allWorkoutDates[currentIndex + 1]
     }
     
     private var formattedDate: String {
         let formatter = DateFormatter()
-        if Calendar.current.isDateInToday(date) {
+        if Calendar.current.isDateInToday(currentDisplayDate) {
             return "Today"
-        } else if Calendar.current.isDateInYesterday(date) {
+        } else if Calendar.current.isDateInYesterday(currentDisplayDate) {
             return "Yesterday"
         } else {
             formatter.dateFormat = "MMM d, yyyy"
-            return formatter.string(from: date)
+            return formatter.string(from: currentDisplayDate)
         }
     }
 }
@@ -357,35 +515,45 @@ struct CompletedWorkoutCard: View {
     @ObservedObject var manager: TimeTrackerManager
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(workout.name)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.white)
-            
-            Text("Duration: \(formatDuration(session.duration))")
-                .font(.system(size: 14))
-                .foregroundColor(.white.opacity(0.7))
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text(workout.name)
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                
+                Spacer()
+                
+                Text("Duration: \(formatDuration(session.duration))")
+                    .font(.system(size: 14, design: .rounded))
+                    .foregroundColor(.white.opacity(0.7))
+            }
             
             ForEach(session.completedExercises) { exerciseSet in
                 if let exercise = manager.data.exercises.first(where: { $0.id == exerciseSet.exerciseId }) {
                     HStack {
                         Text(exercise.name)
                             .foregroundColor(.white)
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: 14, weight: .medium, design: .rounded))
                         
                         Spacer()
                         
                         Text("\(exerciseSet.reps) × \(String(format: "%.1f", exerciseSet.weight)) kg")
                             .foregroundColor(.green)
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: 14, weight: .semibold, design: .rounded))
                     }
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.white.opacity(0.1))
+                    .cornerRadius(8)
                 }
             }
         }
-        .padding()
-        .background(Color(white: 0.22))
-        .cornerRadius(12)
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(red: 0.15, green: 0.15, blue: 0.20))
+                .shadow(color: .black.opacity(0.2), radius: 5, x: 0, y: 3)
+        )
     }
     
     private func formatDuration(_ seconds: Int) -> String {
@@ -399,7 +567,6 @@ struct CompletedWorkoutCard: View {
     }
 }
 
-// WORKOUT SELECTION VIEW IN DERSELBEN DATEI DEFINIEREN
 struct WorkoutSelectionView: View {
     @ObservedObject var manager: TimeTrackerManager
     @Binding var isPresented: Bool
@@ -409,54 +576,65 @@ struct WorkoutSelectionView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color(red: 0.17, green: 0.17, blue: 0.17)
-                    .ignoresSafeArea()
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(red: 0.12, green: 0.12, blue: 0.15),
+                        Color(red: 0.08, green: 0.08, blue: 0.12)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
                 
                 if manager.data.workouts.isEmpty {
-                    VStack(spacing: 15) {
+                    VStack(spacing: 20) {
                         Image(systemName: "dumbbell.fill")
-                            .font(.system(size: 48))
+                            .font(.system(size: 60))
                             .foregroundColor(.white.opacity(0.3))
                         
                         Text("No workouts created yet")
+                            .font(.system(size: 18, weight: .medium, design: .rounded))
                             .foregroundColor(.white.opacity(0.5))
                         
                         Text("Create your first workout in 'My Workouts'")
-                            .font(.system(size: 12))
+                            .font(.system(size: 14, design: .rounded))
                             .foregroundColor(.white.opacity(0.4))
                     }
                 } else {
                     ScrollView {
-                        VStack(spacing: 12) {
+                        VStack(spacing: 16) {
                             ForEach(manager.data.workouts) { workout in
                                 Button(action: {
                                     selectedWorkout = workout
                                     showingExecution = true
                                 }) {
                                     HStack {
-                                        VStack(alignment: .leading, spacing: 6) {
+                                        VStack(alignment: .leading, spacing: 8) {
                                             Text(workout.name)
-                                                .font(.system(size: 18, weight: .bold))
+                                                .font(.system(size: 18, weight: .bold, design: .rounded))
                                                 .foregroundColor(.white)
                                             
                                             HStack(spacing: 15) {
                                                 Label("\(workout.sets.count) ex", systemImage: "list.bullet")
-                                                    .font(.system(size: 12))
+                                                    .font(.system(size: 14, design: .rounded))
                                                     .foregroundColor(.white.opacity(0.6))
                                                 
                                                 Label("\(workout.sessions.count) sessions", systemImage: "calendar")
-                                                    .font(.system(size: 12))
+                                                    .font(.system(size: 14, design: .rounded))
                                                     .foregroundColor(.white.opacity(0.6))
                                             }
                                         }
                                         Spacer()
                                         Image(systemName: "play.circle.fill")
                                             .foregroundColor(.green)
-                                            .font(.system(size: 28))
+                                            .font(.system(size: 32))
                                     }
-                                    .padding()
-                                    .background(Color(white: 0.22))
-                                    .cornerRadius(12)
+                                    .padding(20)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .fill(Color(red: 0.15, green: 0.15, blue: 0.20))
+                                            .shadow(color: .black.opacity(0.2), radius: 5, x: 0, y: 3)
+                                    )
                                 }
                             }
                         }
@@ -468,7 +646,10 @@ struct WorkoutSelectionView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") { isPresented = false }
+                    Button("Cancel") {
+                        isPresented = false
+                    }
+                    .foregroundColor(.red)
                 }
             }
             .sheet(isPresented: $showingExecution) {
