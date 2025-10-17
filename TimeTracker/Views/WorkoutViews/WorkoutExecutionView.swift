@@ -13,6 +13,8 @@ struct WorkoutExecutionView: View {
     @State private var showingAddExercise = false
     @State private var showingFinishAlert = false
     @State private var workoutSets: [WorkoutSet] = []
+    @State private var showingCompletedExercises = false
+    @State private var completedWorkoutSessions: [CompletedWorkoutSession] = []
     
     // Aktuelle Übung und Set
     var currentExercise: Exercise? {
@@ -55,6 +57,18 @@ struct WorkoutExecutionView: View {
         return upcomingSets.compactMap { set in
             manager.data.exercises.first { $0.id == set.exerciseId }
         }
+    }
+    
+    var completedExercisesList: [Exercise] {
+        guard currentExerciseIndex > 0 else { return [] }
+        let completedSets = Array(workoutSets[0..<currentExerciseIndex])
+        return completedSets.compactMap { set in
+            manager.data.exercises.first { $0.id == set.exerciseId }
+        }
+    }
+    
+    var shouldShowFinishButton: Bool {
+        workoutSets.isEmpty || (isLastSet && currentSet?.completed == true)
     }
     
     var body: some View {
@@ -106,28 +120,45 @@ struct WorkoutExecutionView: View {
                             }
                             
                             Spacer()
-                        }
-                        
-                        // Progress Bar mit Schatten
-                        GeometryReader { geometry in
-                            ZStack(alignment: .leading) {
-                                Capsule()
-                                    .frame(height: 8)
-                                    .foregroundColor(Color.white.opacity(0.1))
-                                
-                                Capsule()
-                                    .frame(width: CGFloat(progress) * geometry.size.width, height: 8)
-                                    .foregroundStyle(
-                                        LinearGradient(
-                                            colors: [.green, .mint],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
-                                    )
-                                    .shadow(color: .green.opacity(0.3), radius: 4, x: 0, y: 2)
+                            
+                            // Show Completed Exercises Button
+                            if !completedExercisesList.isEmpty {
+                                Button(action: { showingCompletedExercises.toggle() }) {
+                                    Image(systemName: "list.bullet.circle.fill")
+                                        .font(.system(size: 22))
+                                        .foregroundColor(.blue)
+                                        .background(Circle().fill(Color.white.opacity(0.1)))
+                                }
                             }
                         }
-                        .frame(height: 8)
+                        
+                        // Progress Bar mit Schatten - klickbar für abgeschlossene Übungen
+                        Button(action: {
+                            if !completedExercisesList.isEmpty {
+                                showingCompletedExercises.toggle()
+                            }
+                        }) {
+                            GeometryReader { geometry in
+                                ZStack(alignment: .leading) {
+                                    Capsule()
+                                        .frame(height: 8)
+                                        .foregroundColor(Color.white.opacity(0.1))
+                                    
+                                    Capsule()
+                                        .frame(width: CGFloat(progress) * geometry.size.width, height: 8)
+                                        .foregroundStyle(
+                                            LinearGradient(
+                                                colors: [.green, .mint],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                        .shadow(color: .green.opacity(0.3), radius: 4, x: 0, y: 2)
+                                }
+                            }
+                            .frame(height: 8)
+                        }
+                        .disabled(completedExercisesList.isEmpty)
                     }
                     .padding(.horizontal, 24)
                     .padding(.top, 16)
@@ -212,7 +243,27 @@ struct WorkoutExecutionView: View {
                                             
                                             HStack(spacing: 12) {
                                                 PillTag(text: exercise.muscleGroup, color: .blue)
-                                                PillTag(text: "Set \(currentSetIndex + 1)/\(setsForCurrentExercise.count)", color: .orange)
+                                                
+                                                // Set Counter mit +/- Buttons
+                                                HStack(spacing: 8) {
+                                                    Button(action: removeCurrentSet) {
+                                                        Image(systemName: "minus.circle.fill")
+                                                            .font(.system(size: 16))
+                                                            .foregroundColor(setsForCurrentExercise.count <= 1 ? .gray : .red)
+                                                    }
+                                                    .disabled(setsForCurrentExercise.count <= 1)
+                                                    
+                                                    PillTag(text: "Set \(currentSetIndex + 1)/\(setsForCurrentExercise.count)", color: .orange)
+                                                    
+                                                    Button(action: addSetToCurrentExercise) {
+                                                        Image(systemName: "plus.circle.fill")
+                                                            .font(.system(size: 16))
+                                                            .foregroundColor(.green)
+                                                    }
+                                                }
+                                                .padding(4)
+                                                .background(Color(red: 0.2, green: 0.2, blue: 0.2))
+                                                .cornerRadius(8)
                                             }
                                         }
                                         
@@ -277,9 +328,10 @@ struct WorkoutExecutionView: View {
                                 )
                                 .padding(.horizontal, 20)
                                 
-                                // Action Buttons
-                                HStack(spacing: 12) {
-                                    // Complete Set Toggle
+                                // Complete Set Button
+                                HStack {
+                                    Spacer()
+                                    
                                     Button(action: completeCurrentSet) {
                                         HStack(spacing: 10) {
                                             Image(systemName: set.completed ? "checkmark.circle.fill" : "circle")
@@ -301,25 +353,6 @@ struct WorkoutExecutionView: View {
                                         )
                                         .shadow(color: set.completed ? .green.opacity(0.3) : .black.opacity(0.3), radius: 6, x: 0, y: 3)
                                     }
-                                    
-                                    // Set Management Buttons
-                                    HStack(spacing: 8) {
-                                        Button(action: removeCurrentSet) {
-                                            Image(systemName: "minus.circle.fill")
-                                                .font(.system(size: 20))
-                                                .foregroundColor(setsForCurrentExercise.count <= 1 ? .gray : .red)
-                                        }
-                                        .disabled(setsForCurrentExercise.count <= 1)
-                                        
-                                        Button(action: addSetToCurrentExercise) {
-                                            Image(systemName: "plus.circle.fill")
-                                                .font(.system(size: 20))
-                                                .foregroundColor(.green)
-                                        }
-                                    }
-                                    .padding(10)
-                                    .background(Color(red: 0.2, green: 0.2, blue: 0.2))
-                                    .cornerRadius(10)
                                 }
                                 .padding(.horizontal, 20)
                                 
@@ -360,17 +393,67 @@ struct WorkoutExecutionView: View {
                                     )
                                     .padding(.horizontal, 20)
                                 }
+                                
+                                // Completed Exercises Section (wenn angezeigt)
+                                if showingCompletedExercises && !completedExercisesList.isEmpty {
+                                    VStack(alignment: .leading, spacing: 16) {
+                                        HStack {
+                                            Text("COMPLETED EXERCISES")
+                                                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                                .foregroundColor(.white.opacity(0.6))
+                                                .tracking(1.2)
+                                            
+                                            Spacer()
+                                            
+                                            Button("Close") {
+                                                showingCompletedExercises = false
+                                            }
+                                            .font(.system(size: 14, weight: .medium, design: .rounded))
+                                            .foregroundColor(.blue)
+                                        }
+                                        
+                                        LazyVStack(spacing: 8) {
+                                            ForEach(Array(completedExercisesList.enumerated()), id: \.element.id) { index, exercise in
+                                                CompletedExerciseRow(exercise: exercise)
+                                            }
+                                        }
+                                    }
+                                    .padding(20)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .fill(Color(red: 0.18, green: 0.18, blue: 0.18))
+                                            .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+                                    )
+                                    .padding(.horizontal, 20)
+                                }
                             }
                             .padding(.vertical, 20)
                         }
+                    } else if workoutSets.isEmpty {
+                        // Keine Übungen mehr vorhanden
+                        VStack(spacing: 20) {
+                            Image(systemName: "dumbbell.slash")
+                                .font(.system(size: 60))
+                                .foregroundColor(.white.opacity(0.3))
+                            
+                            Text("No Exercises")
+                                .font(.system(size: 24, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                            
+                            Text("Add exercises to start your workout")
+                                .font(.system(size: 16, weight: .medium, design: .rounded))
+                                .foregroundColor(.white.opacity(0.6))
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding()
                     }
                     
                     Spacer()
                     
-                    // Finish Workout Button (nur wenn letztes Set)
-                    if isLastSet && currentSet?.completed == true {
+                    // Finish Workout Button (wenn letztes Set oder keine Übungen mehr)
+                    if shouldShowFinishButton {
                         VStack(spacing: 12) {
-                            Text("🎉 Workout Complete!")
+                            Text(workoutSets.isEmpty ? "🎉 All Exercises Completed!" : "🎉 Workout Complete!")
                                 .font(.system(size: 18, weight: .bold, design: .rounded))
                                 .foregroundColor(.green)
                             
@@ -538,10 +621,32 @@ struct WorkoutExecutionView: View {
     
     private func removeCurrentExercise() {
         guard currentExerciseIndex < workoutSets.count else { return }
+        
+        // Speichere die abgeschlossenen Sets dieser Übung bevor sie gelöscht wird
         if let currentWorkoutSet = currentWorkoutSet {
+            let completedSetsForExercise = completedExercises.filter {
+                $0.exerciseId == currentWorkoutSet.exerciseId && $0.completed
+            }
+            
+            // Füge die abgeschlossenen Sets zur Session hinzu
+            if !completedSetsForExercise.isEmpty {
+                let duration = Int(Date().timeIntervalSince(startTime))
+                manager.updateCompletedWorkoutSession(
+                    workoutId: workout.id,
+                    sessionId: currentSessionId,
+                    exercises: completedSetsForExercise,
+                    duration: duration
+                )
+            }
+            
+            // Entferne alle Sets dieser Übung (auch unvollständige)
             completedExercises.removeAll { $0.exerciseId == currentWorkoutSet.exerciseId }
         }
+        
+        // Entferne aus workoutSets
         workoutSets.remove(at: currentExerciseIndex)
+        
+        // Update current indices
         if currentExerciseIndex >= workoutSets.count {
             currentExerciseIndex = max(0, workoutSets.count - 1)
         }
@@ -551,8 +656,12 @@ struct WorkoutExecutionView: View {
     private func removeUpcomingExercise(at index: Int) {
         let actualIndex = currentExerciseIndex + 1 + index
         guard actualIndex < workoutSets.count else { return }
+        
+        // Entferne alle Sets dieser Übung
         let exerciseId = workoutSets[actualIndex].exerciseId
         completedExercises.removeAll { $0.exerciseId == exerciseId }
+        
+        // Entferne aus workoutSets
         workoutSets.remove(at: actualIndex)
     }
     
@@ -719,6 +828,44 @@ struct UpcomingExerciseRow: View {
         .overlay(
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.white.opacity(0.1), lineWidth: 1)
+        )
+    }
+}
+
+struct CompletedExerciseRow: View {
+    let exercise: Exercise
+    
+    var body: some View {
+        HStack {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 16))
+                .foregroundColor(.green)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(exercise.name)
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundColor(.white.opacity(0.8))
+                
+                Text(exercise.muscleGroup)
+                    .font(.system(size: 12, weight: .regular, design: .rounded))
+                    .foregroundColor(.white.opacity(0.4))
+            }
+            
+            Spacer()
+            
+            Image(systemName: "lock.fill")
+                .font(.system(size: 14))
+                .foregroundColor(.white.opacity(0.3))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(red: 0.25, green: 0.25, blue: 0.25))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.white.opacity(0.05), lineWidth: 1)
         )
     }
 }

@@ -8,6 +8,8 @@
 import SwiftUI
 import UserNotifications
 import Combine
+import UIKit
+import MediaPlayer
 
 class TimeTrackerManager: ObservableObject {
     @Published var data: TrackerData
@@ -313,63 +315,6 @@ class TimeTrackerManager: ObservableObject {
         saveData()
     }
     
-    func toggleSleepMode(alarmTime: Date?) {
-        if data.sleepData.isSleeping {
-            wakeUp()
-        } else {
-            goToSleep(alarmTime: alarmTime)
-        }
-    }
-    
-    private func goToSleep(alarmTime: Date?) {
-        let now = Date()
-        let calendar = Calendar.current
-        let hour = calendar.component(.hour, from: now)
-        
-        data.sleepData.isSleeping = true
-        data.sleepData.sleepStartTime = now
-        data.sleepData.alarmTime = alarmTime
-        
-        if hour < 22 {
-            positiveMessage = "🌙 Great choice! Going to bed early is excellent for your health!"
-            showingPositiveMessage = true
-        }
-        
-        if let alarm = alarmTime {
-            scheduleAlarm(for: alarm)
-        }
-        
-        saveData()
-    }
-    
-    private func wakeUp() {
-        guard let sleepStart = data.sleepData.sleepStartTime else { return }
-        
-        let now = Date()
-        let sleepDuration = now.timeIntervalSince(sleepStart) / 3600
-        let calendar = Calendar.current
-        let hour = calendar.component(.hour, from: now)
-        
-        let session = SleepSession(startTime: sleepStart, endTime: now)
-        data.sleepData.sleepSessions.append(session)
-        
-        if data.sleepData.sleepSessions.count > 30 {
-            data.sleepData.sleepSessions.removeFirst()
-        }
-        
-        if hour < 7 && sleepDuration >= 8 {
-            positiveMessage = "☀️ Wonderful! You woke up early after a full night's sleep!"
-            showingPositiveMessage = true
-        }
-        
-        data.sleepData.isSleeping = false
-        data.sleepData.sleepStartTime = nil
-        data.sleepData.alarmTime = nil
-        
-        cancelAlarm()
-        saveData()
-    }
-    
     func getSleepStatistics() -> (avgDuration: Double, avgBedtime: Double, avgWakeTime: Double, bedtimeVariation: Double, wakeVariation: Double) {
         guard !data.sleepData.sleepSessions.isEmpty else {
             return (0, 0, 0, 0, 0)
@@ -533,5 +478,272 @@ class TimeTrackerManager: ObservableObject {
         }
         
         return dates
+    }
+        
+    func toggleSleepMode(alarmTime: Date?) {
+        if data.sleepData.isSleeping {
+            wakeUp()
+        } else {
+            goToSleep(alarmTime: alarmTime)
+        }
+    }
+    
+    private func goToSleep(alarmTime: Date?) {
+        let now = Date()
+        let calendar = Calendar.current
+        let hour = calendar.component(.hour, from: now)
+        
+        data.sleepData.isSleeping = true
+        data.sleepData.sleepStartTime = now
+        data.sleepData.alarmTime = alarmTime
+        
+        // System-Alarm erstellen
+        if let alarmTime = alarmTime {
+            scheduleSystemAlarm(for: alarmTime)
+        }
+        
+        // Positive Nachricht basierend auf der Uhrzeit
+        if hour < 22 {
+            positiveMessage = "🌙 Great choice! Going to bed early is excellent for your health!"
+            showingPositiveMessage = true
+        } else if hour >= 23 {
+            positiveMessage = "🌙 Better late than never! Your body will thank you for the rest."
+            showingPositiveMessage = true
+        }
+        
+        saveData()
+    }
+    
+    private func wakeUp() {
+        guard let sleepStart = data.sleepData.sleepStartTime else { return }
+        
+        let now = Date()
+        let sleepDuration = now.timeIntervalSince(sleepStart) / 3600
+        let calendar = Calendar.current
+        let hour = calendar.component(.hour, from: now)
+        
+        // Sleep-Session speichern
+        let session = SleepSession(startTime: sleepStart, endTime: now)
+        data.sleepData.sleepSessions.append(session)
+        
+        // Alte Sessions aufräumen (letzte 30 behalten)
+        if data.sleepData.sleepSessions.count > 30 {
+            data.sleepData.sleepSessions.removeFirst()
+        }
+        
+        // Positive Nachricht basierend auf Schlafdauer und Aufstehzeit
+        if hour < 7 && sleepDuration >= 8 {
+            positiveMessage = "☀️ Wonderful! You woke up early after a full night's sleep!"
+            showingPositiveMessage = true
+        } else if sleepDuration < 6 {
+            positiveMessage = "💤 You might want to get more sleep tonight. Your body needs rest!"
+            showingPositiveMessage = true
+        }
+        
+        data.sleepData.isSleeping = false
+        data.sleepData.sleepStartTime = nil
+        data.sleepData.alarmTime = nil
+        
+        // System-Alarm entfernen
+        cancelSystemAlarm()
+        saveData()
+    }
+    
+    // MARK: - System Alarm Integration
+    
+    private func scheduleSystemAlarm(for time: Date) {
+        cancelSystemAlarm()
+        
+        let center = UNUserNotificationCenter.current()
+        
+        // Erstelle eine eindeutige ID für diesen Alarm
+        let alarmId = "sleepAlarm_\(UUID().uuidString)"
+        data.sleepData.systemAlarmId = alarmId
+        
+        let content = UNMutableNotificationContent()
+        content.title = "⏰ Wake Up Time!"
+        content.body = "Time to start your day! Hope you had a good rest."
+        content.sound = UNNotificationSound.defaultCritical
+        content.categoryIdentifier = "ALARM"
+        
+        // Vibrationsmuster für Alarm
+        content.userInfo = ["alarm_type": "sleep_alarm"]
+        
+        // Stelle sicher, dass die Zeit in der Zukunft liegt
+        var targetDate = time
+        let calendar = Calendar.current
+        let now = Date()
+        
+        if time <= now {
+            targetDate = calendar.date(byAdding: .day, value: 1, to: time)!
+        }
+        
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: targetDate)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        
+        let request = UNNotificationRequest(identifier: alarmId, content: content, trigger: trigger)
+        
+        center.add(request) { error in
+            if let error = error {
+                print("Error scheduling alarm: \(error.localizedDescription)")
+                // Fallback: Versuche es mit einem einfacheren Alarm
+                self.scheduleFallbackAlarm(for: targetDate)
+            } else {
+                print("System alarm scheduled for \(targetDate)")
+            }
+        }
+        
+        // Zusätzlich: Stelle einen echten iOS Alarm (wenn möglich)
+        scheduleIOSAlarmIfPossible(for: targetDate)
+    }
+    
+    private func scheduleFallbackAlarm(for time: Date) {
+        let content = UNMutableNotificationContent()
+        content.title = "⏰ Wake Up!"
+        content.body = "Time to wake up!"
+        content.sound = .default
+        
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, time.timeIntervalSince(Date())), repeats: false)
+        let request = UNNotificationRequest(identifier: "fallbackAlarm", content: content, trigger: trigger)
+        
+        UNUserNotificationCenter.current().add(request)
+    }
+    
+    private func scheduleIOSAlarmIfPossible(for time: Date) {
+        // Diese Methode könnte mit externen Alarm-APIs integriert werden
+        // Für jetzt verwenden wir nur Local Notifications
+        
+        // Optional: Integration mit HealthKit für Schlafanalyse
+        scheduleHealthKitSleepAnalysis(startTime: data.sleepData.sleepStartTime ?? Date(), endTime: time)
+    }
+    
+    private func scheduleHealthKitSleepAnalysis(startTime: Date, endTime: Date) {
+        // HealthKit Integration für bessere Schlafanalyse
+        // Dies würde HealthKit-Berechtigungen benötigen
+    }
+    
+    private func cancelSystemAlarm() {
+        let center = UNUserNotificationCenter.current()
+        
+        // Entferne den spezifischen Sleep-Alarm
+        if let alarmId = data.sleepData.systemAlarmId {
+            center.removePendingNotificationRequests(withIdentifiers: [alarmId])
+        }
+        
+        // Entferne auch alle anderen ausstehenden Sleep-Alarme
+        center.getPendingNotificationRequests { requests in
+            let sleepAlarms = requests.filter { $0.identifier.contains("sleepAlarm") }
+            let alarmIds = sleepAlarms.map { $0.identifier }
+            center.removePendingNotificationRequests(withIdentifiers: alarmIds)
+        }
+        
+        center.removePendingNotificationRequests(withIdentifiers: ["fallbackAlarm"])
+        data.sleepData.systemAlarmId = nil
+    }
+    
+    // MARK: - Enhanced Sleep Statistics
+    
+    func getEnhancedSleepStatistics() -> SleepStatistics {
+        guard !data.sleepData.sleepSessions.isEmpty else {
+            return SleepStatistics(
+                avgDuration: 0,
+                avgBedtime: 0,
+                avgWakeTime: 0,
+                bedtimeVariation: 0,
+                wakeVariation: 0,
+                consistencyScore: 0
+            )
+        }
+        
+        let sessions = data.sleepData.sleepSessions
+        let calendar = Calendar.current
+        
+        var durations: [Double] = []
+        var bedtimes: [Double] = []
+        var wakeTimes: [Double] = []
+        
+        for session in sessions {
+            let duration = session.endTime.timeIntervalSince(session.startTime) / 3600
+            durations.append(duration)
+            
+            // Verwende die tatsächliche Systemzeit
+            let bedHour = Double(calendar.component(.hour, from: session.startTime))
+            let bedMinute = Double(calendar.component(.minute, from: session.startTime))
+            bedtimes.append(bedHour + bedMinute / 60.0)
+            
+            let wakeHour = Double(calendar.component(.hour, from: session.endTime))
+            let wakeMinute = Double(calendar.component(.minute, from: session.endTime))
+            wakeTimes.append(wakeHour + wakeMinute / 60.0)
+        }
+        
+        let avgDuration = durations.reduce(0, +) / Double(durations.count)
+        let avgBedtime = bedtimes.reduce(0, +) / Double(bedtimes.count)
+        let avgWakeTime = wakeTimes.reduce(0, +) / Double(wakeTimes.count)
+        
+        let bedtimeVariance = bedtimes.map { pow($0 - avgBedtime, 2) }.reduce(0, +) / Double(bedtimes.count)
+        let bedtimeStdDev = sqrt(bedtimeVariance)
+        
+        let wakeVariance = wakeTimes.map { pow($0 - avgWakeTime, 2) }.reduce(0, +) / Double(wakeTimes.count)
+        let wakeStdDev = sqrt(wakeVariance)
+        
+        // Konsistenz-Score berechnen (0-100)
+        let consistencyScore = calculateConsistencyScore(
+            durations: durations,
+            bedtimes: bedtimes,
+            wakeTimes: wakeTimes
+        )
+        
+        return SleepStatistics(
+            avgDuration: avgDuration,
+            avgBedtime: avgBedtime,
+            avgWakeTime: avgWakeTime,
+            bedtimeVariation: bedtimeStdDev * 60, // in Minuten
+            wakeVariation: wakeStdDev * 60, // in Minuten
+            consistencyScore: consistencyScore
+        )
+    }
+    
+    private func calculateConsistencyScore(durations: [Double], bedtimes: [Double], wakeTimes: [Double]) -> Double {
+        guard durations.count >= 3 else { return 50.0 } // Baseline für wenige Daten
+        
+        // Berechne Variationen
+        let durationStdDev = calculateStandardDeviation(durations)
+        let bedtimeStdDev = calculateStandardDeviation(bedtimes)
+        let wakeStdDev = calculateStandardDeviation(wakeTimes)
+        
+        // Normalisiere die Werte (niedrigere StdDev = besser)
+        let maxDurationStdDev = 3.0 // Stunden
+        let maxTimeStdDev = 4.0 // Stunden
+        
+        let durationScore = max(0, 100 - (durationStdDev / maxDurationStdDev) * 50)
+        let bedtimeScore = max(0, 100 - (bedtimeStdDev / maxTimeStdDev) * 25)
+        let wakeScore = max(0, 100 - (wakeStdDev / maxTimeStdDev) * 25)
+        
+        return (durationScore + bedtimeScore + wakeScore) / 3
+    }
+    
+    private func calculateStandardDeviation(_ values: [Double]) -> Double {
+        let mean = values.reduce(0, +) / Double(values.count)
+        let variance = values.map { pow($0 - mean, 2) }.reduce(0, +) / Double(values.count)
+        return sqrt(variance)
+    }
+    
+    // MARK: - System Time Integration
+    
+    func getCurrentSystemTime() -> Date {
+        return Date() // Gibt die aktuelle Systemzeit zurück
+    }
+    
+    func formatSystemTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        return formatter.string(from: date)
+    }
+    
+    func isSystemTimeWithinSleepHours() -> Bool {
+        let calendar = Calendar.current
+        let hour = calendar.component(.hour, from: Date())
+        return hour >= 22 || hour < 6 // 10 PM - 6 AM als Schlafenszeit
     }
 }

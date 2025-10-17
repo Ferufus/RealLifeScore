@@ -106,15 +106,15 @@ struct WorkoutStatsView: View {
                 .foregroundColor(.white)
             
             HStack(spacing: 15) {
-                StatCard(title: "Total Sessions", value: "\(workout.sessions.count)")
-                StatCard(title: "Avg Duration", value: formatDuration(averageDuration))
-                StatCard(title: "Total Exercises", value: "\(workout.sets.count)")
+                StatCard(title: "Total Sessions", value: "\(workout.sessions.count)" , color: .purple)
+                StatCard(title: "Avg Duration", value: formatDuration(averageDuration), color: .purple)
+                StatCard(title: "Total Exercises", value: "\(workout.sets.count)", color: .purple)
             }
             
             if !workout.sessions.isEmpty {
                 HStack(spacing: 15) {
-                    StatCard(title: "Total Time", value: formatDuration(totalWorkoutTime))
-                    StatCard(title: "Last Session", value: formatLastSessionDate())
+                    StatCard(title: "Total Time", value: formatDuration(totalWorkoutTime), color: .purple)
+                    StatCard(title: "Last Session", value: formatLastSessionDate(), color: .purple)
                 }
             }
         }
@@ -156,6 +156,7 @@ struct WorkoutStatsView: View {
 struct StatCard: View {
     let title: String
     let value: String
+    let color: Color
     
     var body: some View {
         VStack(spacing: 8) {

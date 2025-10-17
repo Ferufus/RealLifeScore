@@ -121,15 +121,15 @@ struct WorkoutDetailViewWithStats: View {
                             .foregroundColor(.white)
                         
                         HStack(spacing: 15) {
-                            StatCard(title: "Total Sessions", value: "\(workout.sessions.count)")
-                            StatCard(title: "Completed", value: "\(completedSessionsCount)")
-                            StatCard(title: "Total Exercises", value: "\(workout.sets.count)")
+                            StatCard(title: "Total Sessions", value: "\(workout.sessions.count)", color: .purple)
+                            StatCard(title: "Completed", value: "\(completedSessionsCount)", color: .purple)
+                            StatCard(title: "Total Exercises", value: "\(workout.sets.count)", color: .purple)
                         }
                         
                         if completedSessionsCount > 0 {
                             HStack(spacing: 15) {
-                                StatCard(title: "Total Time", value: formatDuration(totalWorkoutTime))
-                                StatCard(title: "Avg Time", value: formatDuration(totalWorkoutTime / completedSessionsCount))
+                                StatCard(title: "Total Time", value: formatDuration(totalWorkoutTime), color: .purple)
+                                StatCard(title: "Avg Time", value: formatDuration(totalWorkoutTime / completedSessionsCount), color: .purple)
                             }
                         }
                     }

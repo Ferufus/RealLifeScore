@@ -38,13 +38,6 @@ struct SleepSession: Codable, Identifiable {
     var endTime: Date
 }
 
-struct SleepData: Codable {
-    var isSleeping: Bool = false
-    var sleepStartTime: Date?
-    var alarmTime: Date?
-    var sleepSessions: [SleepSession] = []
-}
-
 struct TrackerData: Codable {
     var workCategories: [CategoryItem] = []
     var sportsCategories: [CategoryItem] = []
@@ -95,4 +88,22 @@ struct Workout: Codable, Identifiable {
     var sets: [WorkoutSet] = []
     var sessions: [WorkoutSession] = []
     var completedSessions: [CompletedWorkoutSession] = [] // Neue Property für tatsächliche Durchführung
+}
+
+struct SleepData: Codable {
+    var isSleeping: Bool = false
+    var sleepStartTime: Date?
+    var alarmTime: Date?
+    var sleepSessions: [SleepSession] = []
+    var systemAlarmId: String? // ID des System-Alarms
+}
+
+// Sleep Statistics mit erweiterten Daten
+struct SleepStatistics: Codable {
+    var avgDuration: Double
+    var avgBedtime: Double
+    var avgWakeTime: Double
+    var bedtimeVariation: Double
+    var wakeVariation: Double
+    var consistencyScore: Double
 }
