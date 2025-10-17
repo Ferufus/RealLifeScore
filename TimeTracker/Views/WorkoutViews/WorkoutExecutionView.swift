@@ -74,11 +74,11 @@ struct WorkoutExecutionView: View {
     var body: some View {
         NavigationView {
             ZStack(alignment: .bottomTrailing) {
-                // Hintergrund mit Gradient
+                // Dunkler Gradient wie im SleepView
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        Color(red: 0.12, green: 0.12, blue: 0.12),
-                        Color(red: 0.08, green: 0.08, blue: 0.08)
+                        Color(red: 0.10, green: 0.10, blue: 0.15),
+                        Color(red: 0.05, green: 0.05, blue: 0.10)
                     ]),
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -86,7 +86,7 @@ struct WorkoutExecutionView: View {
                 .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // Elegante Header Bar
+                    // Header Bar im SleepView Design
                     VStack(spacing: 16) {
                         HStack {
                             VStack(alignment: .leading, spacing: 6) {
@@ -127,12 +127,13 @@ struct WorkoutExecutionView: View {
                                     Image(systemName: "list.bullet.circle.fill")
                                         .font(.system(size: 22))
                                         .foregroundColor(.blue)
+                                        .padding(8)
                                         .background(Circle().fill(Color.white.opacity(0.1)))
                                 }
                             }
                         }
                         
-                        // Progress Bar mit Schatten - klickbar für abgeschlossene Übungen
+                        // Progress Bar
                         Button(action: {
                             if !completedExercisesList.isEmpty {
                                 showingCompletedExercises.toggle()
@@ -160,25 +161,13 @@ struct WorkoutExecutionView: View {
                         }
                         .disabled(completedExercisesList.isEmpty)
                     }
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, 20)
                     .padding(.top, 16)
                     .padding(.bottom, 20)
                     .background(
-                        LinearGradient(
-                            colors: [Color(red: 0.18, green: 0.18, blue: 0.18), Color(red: 0.15, green: 0.15, blue: 0.15)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                        .overlay(
-                            Rectangle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [.white.opacity(0.05), .clear],
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                )
-                        )
+                        RoundedRectangle(cornerRadius: 0)
+                            .fill(Color(red: 0.15, green: 0.15, blue: 0.20))
+                            .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
                     )
                     
                     // Hauptinhalt - Aktuelles Set
@@ -227,7 +216,7 @@ struct WorkoutExecutionView: View {
                         .padding(.horizontal, 32)
                     } else if let exercise = currentExercise, let set = currentSet {
                         ScrollView {
-                            VStack(spacing: 24) {
+                            VStack(spacing: 20) {
                                 // Aktuelle Übung Card
                                 VStack(spacing: 16) {
                                     HStack(alignment: .top) {
@@ -281,13 +270,7 @@ struct WorkoutExecutionView: View {
                                 .padding(20)
                                 .background(
                                     RoundedRectangle(cornerRadius: 20)
-                                        .fill(
-                                            LinearGradient(
-                                                colors: [Color(red: 0.22, green: 0.22, blue: 0.22), Color(red: 0.18, green: 0.18, blue: 0.18)],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            )
-                                        )
+                                        .fill(Color(red: 0.15, green: 0.15, blue: 0.20))
                                         .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
                                 )
                                 .padding(.horizontal, 20)
@@ -323,7 +306,7 @@ struct WorkoutExecutionView: View {
                                 }
                                 .background(
                                     RoundedRectangle(cornerRadius: 20)
-                                        .fill(Color(red: 0.15, green: 0.15, blue: 0.15))
+                                        .fill(Color(red: 0.15, green: 0.15, blue: 0.20))
                                         .shadow(color: .black.opacity(0.4), radius: 10, x: 0, y: 5)
                                 )
                                 .padding(.horizontal, 20)
@@ -388,7 +371,7 @@ struct WorkoutExecutionView: View {
                                     .padding(20)
                                     .background(
                                         RoundedRectangle(cornerRadius: 20)
-                                            .fill(Color(red: 0.18, green: 0.18, blue: 0.18))
+                                            .fill(Color(red: 0.15, green: 0.15, blue: 0.20))
                                             .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
                                     )
                                     .padding(.horizontal, 20)
@@ -421,7 +404,7 @@ struct WorkoutExecutionView: View {
                                     .padding(20)
                                     .background(
                                         RoundedRectangle(cornerRadius: 20)
-                                            .fill(Color(red: 0.18, green: 0.18, blue: 0.18))
+                                            .fill(Color(red: 0.15, green: 0.15, blue: 0.20))
                                             .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
                                     )
                                     .padding(.horizontal, 20)
@@ -478,12 +461,12 @@ struct WorkoutExecutionView: View {
                                 .shadow(color: .blue.opacity(0.4), radius: 8, x: 0, y: 4)
                             }
                         }
-                        .padding(.horizontal, 32)
+                        .padding(.horizontal, 20)
                         .padding(.bottom, 20)
                     }
                 }
                 
-                // Elegant Floating Add Button
+                // Floating Add Button
                 Button(action: { showingAddExercise = true }) {
                     ZStack {
                         Circle()
@@ -502,17 +485,22 @@ struct WorkoutExecutionView: View {
                             .foregroundColor(.white)
                     }
                 }
-                .padding(.trailing, 24)
-                .padding(.bottom, 24)
+                .padding(.trailing, 20)
+                .padding(.bottom, 20)
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
+                    Button(action: {
                         showingFinishAlert = true
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.blue)
+                            .padding(8)
+                            .background(Color.white.opacity(0.1))
+                            .cornerRadius(8)
                     }
-                    .font(.system(size: 16, weight: .medium, design: .rounded))
-                    .foregroundColor(.red)
                 }
             }
             .sheet(isPresented: $showingAddExercise) {
@@ -894,8 +882,8 @@ struct AddExerciseDuringWorkoutView: View {
             ZStack {
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        Color(red: 0.12, green: 0.12, blue: 0.12),
-                        Color(red: 0.08, green: 0.08, blue: 0.08)
+                        Color(red: 0.12, green: 0.12, blue: 0.15),
+                        Color(red: 0.08, green: 0.08, blue: 0.12)
                     ]),
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -943,7 +931,7 @@ struct AddExerciseDuringWorkoutView: View {
                                     .background(
                                         RoundedRectangle(cornerRadius: 12)
                                             .fill(selectedExerciseId == exercise.id ?
-                                                Color.blue.opacity(0.2) : Color(red: 0.22, green: 0.22, blue: 0.22))
+                                                Color.blue.opacity(0.2) : Color(red: 0.15, green: 0.15, blue: 0.20))
                                     )
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
@@ -1016,7 +1004,7 @@ struct AddExerciseDuringWorkoutView: View {
                         .padding(20)
                         .background(
                             RoundedRectangle(cornerRadius: 16)
-                                .fill(Color(red: 0.18, green: 0.18, blue: 0.18))
+                                .fill(Color(red: 0.15, green: 0.15, blue: 0.20))
                         )
                         .padding(.horizontal, 20)
                     }
@@ -1051,11 +1039,16 @@ struct AddExerciseDuringWorkoutView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
+                    Button(action: {
                         isPresented = false
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.blue)
+                            .padding(8)
+                            .background(Color.white.opacity(0.1))
+                            .cornerRadius(8)
                     }
-                    .font(.system(size: 16, weight: .medium, design: .rounded))
-                    .foregroundColor(.red)
                 }
             }
         }

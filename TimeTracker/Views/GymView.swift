@@ -25,10 +25,6 @@ struct GymView: View {
                     VStack(spacing: 25) {
                         // Gym Schedule
                         VStack(spacing: 20) {
-                            Text("🏋️ Gym Schedule")
-                                .font(.system(size: 24, weight: .bold, design: .rounded))
-                                .foregroundColor(.white)
-                            
                             HStack(spacing: 8) {
                                 ForEach(1...7, id: \.self) { day in
                                     VStack(spacing: 10) {
@@ -110,20 +106,6 @@ struct GymView: View {
                         
                         // Consistency Calendar
                         VStack(spacing: 20) {
-                            HStack {
-                                Text("📅 Workout Calendar")
-                                    .font(.system(size: 20, weight: .bold, design: .rounded))
-                                    .foregroundColor(.white)
-                                
-                                Spacer()
-                                
-                                Button("Today") {
-                                    selectedDate = Date()
-                                }
-                                .font(.system(size: 16, weight: .semibold, design: .rounded))
-                                .foregroundColor(.blue)
-                            }
-                            
                             GymWorkoutCalendarView(
                                 manager: manager,
                                 selectedDate: $selectedDate,
@@ -235,10 +217,10 @@ struct GymWorkoutCalendarView: View {
                                     .fill(isSelected ? Color.blue : (isToday ? Color.blue.opacity(0.3) : Color.clear))
                                 
                                 if hasWorkout {
-                                    Circle()
-                                        .fill(Color.green)
-                                        .frame(width: 8, height: 8)
-                                        .offset(y: 8)
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(.green)
+                                        .offset(y: 10)
                                 }
                                 
                                 Text("\(Calendar.current.component(.day, from: currentDate))")
@@ -254,9 +236,9 @@ struct GymWorkoutCalendarView: View {
             // Legend
             HStack(spacing: 20) {
                 HStack(spacing: 6) {
-                    Circle()
-                        .fill(Color.green)
-                        .frame(width: 8, height: 8)
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.green)
                     Text("Workout")
                         .font(.system(size: 12, design: .rounded))
                         .foregroundColor(.white.opacity(0.7))
@@ -336,6 +318,7 @@ struct DateWorkoutDetailView: View {
     let date: Date
     @Binding var isPresented: Bool
     @State private var currentDisplayDate: Date
+    @State private var offset: CGFloat = 0
     
     init(manager: TimeTrackerManager, date: Date, isPresented: Binding<Bool>) {
         self.manager = manager
@@ -352,6 +335,20 @@ struct DateWorkoutDetailView: View {
         manager.getWorkoutCompletionDates().sorted()
     }
     
+    var currentIndex: Int? {
+        allWorkoutDates.firstIndex(where: { Calendar.current.isDate($0, inSameDayAs: currentDisplayDate) })
+    }
+    
+    var canSwipeLeft: Bool {
+        guard let index = currentIndex else { return false }
+        return index < allWorkoutDates.count - 1
+    }
+    
+    var canSwipeRight: Bool {
+        guard let index = currentIndex else { return false }
+        return index > 0
+    }
+    
     var body: some View {
         NavigationView {
             ZStack {
@@ -366,46 +363,49 @@ struct DateWorkoutDetailView: View {
                 .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // Navigation Header with Swipe
-                    HStack {
-                        Button(action: navigateToPreviousWorkout) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(canNavigateToPrevious ? .blue : .gray)
-                                .padding(12)
-                                .background(Color.white.opacity(0.1))
-                                .cornerRadius(10)
+                    // Header mit Datum
+                    VStack(spacing: 8) {
+                        Text(formattedDate)
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                        
+                        if completedSessions.count > 0 {
+                            Text("\(completedSessions.count) workout\(completedSessions.count == 1 ? "" : "s")")
+                                .font(.system(size: 14, design: .rounded))
+                                .foregroundColor(.white.opacity(0.7))
                         }
-                        .disabled(!canNavigateToPrevious)
                         
-                        Spacer()
-                        
-                        VStack(spacing: 4) {
-                            Text(formattedDate)
-                                .font(.system(size: 18, weight: .bold, design: .rounded))
-                                .foregroundColor(.white)
-                            
-                            if completedSessions.count > 0 {
-                                Text("\(completedSessions.count) workout\(completedSessions.count == 1 ? "" : "s")")
-                                    .font(.system(size: 14, design: .rounded))
-                                    .foregroundColor(.white.opacity(0.7))
+                        // Swipe Indicator
+                        if canSwipeRight || canSwipeLeft {
+                            HStack(spacing: 8) {
+                                if canSwipeRight {
+                                    Image(systemName: "chevron.left")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.white.opacity(0.5))
+                                    Text("Swipe for older")
+                                        .font(.system(size: 12, design: .rounded))
+                                        .foregroundColor(.white.opacity(0.5))
+                                }
+                                
+                                if canSwipeRight && canSwipeLeft {
+                                    Text("•")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.white.opacity(0.5))
+                                }
+                                
+                                if canSwipeLeft {
+                                    Text("Swipe for newer")
+                                        .font(.system(size: 12, design: .rounded))
+                                        .foregroundColor(.white.opacity(0.5))
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.white.opacity(0.5))
+                                }
                             }
+                            .padding(.top, 4)
                         }
-                        
-                        Spacer()
-                        
-                        Button(action: navigateToNextWorkout) {
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(canNavigateToNext ? .blue : .gray)
-                                .padding(12)
-                                .background(Color.white.opacity(0.1))
-                                .cornerRadius(10)
-                        }
-                        .disabled(!canNavigateToNext)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
+                    .padding(.vertical, 20)
                     
                     if completedSessions.isEmpty {
                         VStack(spacing: 20) {
@@ -420,10 +420,13 @@ struct DateWorkoutDetailView: View {
                                     .font(.system(size: 20, weight: .bold, design: .rounded))
                                     .foregroundColor(.white)
                                 
-                                Text("Swipe to navigate to days with workouts")
-                                    .font(.system(size: 14, design: .rounded))
-                                    .foregroundColor(.white.opacity(0.5))
-                                    .multilineTextAlignment(.center)
+                                if canSwipeRight || canSwipeLeft {
+                                    Text("Swipe left/right to navigate to days with workouts")
+                                        .font(.system(size: 14, design: .rounded))
+                                        .foregroundColor(.white.opacity(0.5))
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal, 20)
+                                }
                             }
                             
                             Spacer()
@@ -442,55 +445,59 @@ struct DateWorkoutDetailView: View {
                         }
                     }
                 }
+                .offset(x: offset)
+                .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.8), value: offset)
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
                         isPresented = false
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.blue)
+                            .padding(8)
+                            .background(Color.white.opacity(0.1))
+                            .cornerRadius(8)
                     }
-                    .foregroundColor(.blue)
                 }
             }
             .gesture(
                 DragGesture()
+                    .onChanged { value in
+                        offset = value.translation.width
+                    }
                     .onEnded { value in
                         let horizontalAmount = value.translation.width
-                        if abs(horizontalAmount) > 50 {
-                            if horizontalAmount > 0 {
+                        let swipeThreshold: CGFloat = 50
+                        
+                        if abs(horizontalAmount) > swipeThreshold {
+                            if horizontalAmount > 0 && canSwipeRight {
+                                // Swipe nach rechts - älteres Datum
                                 navigateToPreviousWorkout()
-                            } else {
+                            } else if horizontalAmount < 0 && canSwipeLeft {
+                                // Swipe nach links - neueres Datum
                                 navigateToNextWorkout()
                             }
                         }
+                        
+                        // Zurück zur ursprünglichen Position
+                        offset = 0
                     }
             )
         }
     }
     
-    private var canNavigateToPrevious: Bool {
-        guard let currentIndex = allWorkoutDates.firstIndex(where: { Calendar.current.isDate($0, inSameDayAs: currentDisplayDate) }) else {
-            return false
-        }
-        return currentIndex > 0
-    }
-    
-    private var canNavigateToNext: Bool {
-        guard let currentIndex = allWorkoutDates.firstIndex(where: { Calendar.current.isDate($0, inSameDayAs: currentDisplayDate) }) else {
-            return false
-        }
-        return currentIndex < allWorkoutDates.count - 1
-    }
-    
     private func navigateToPreviousWorkout() {
-        guard let currentIndex = allWorkoutDates.firstIndex(where: { Calendar.current.isDate($0, inSameDayAs: currentDisplayDate) }),
+        guard let currentIndex = currentIndex,
               currentIndex > 0 else { return }
         
         currentDisplayDate = allWorkoutDates[currentIndex - 1]
     }
     
     private func navigateToNextWorkout() {
-        guard let currentIndex = allWorkoutDates.firstIndex(where: { Calendar.current.isDate($0, inSameDayAs: currentDisplayDate) }),
+        guard let currentIndex = currentIndex,
               currentIndex < allWorkoutDates.count - 1 else { return }
         
         currentDisplayDate = allWorkoutDates[currentIndex + 1]
@@ -503,7 +510,7 @@ struct DateWorkoutDetailView: View {
         } else if Calendar.current.isDateInYesterday(currentDisplayDate) {
             return "Yesterday"
         } else {
-            formatter.dateFormat = "MMM d, yyyy"
+            formatter.dateFormat = "EEEE, MMM d, yyyy"
             return formatter.string(from: currentDisplayDate)
         }
     }
