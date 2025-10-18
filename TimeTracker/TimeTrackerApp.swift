@@ -1,10 +1,3 @@
-//
-//  TimeTrackerApp.swift
-//  TimeTracker
-//
-//  Created by Thomas Bürger on 13.10.25.
-//
-
 import SwiftUI
 
 @main
