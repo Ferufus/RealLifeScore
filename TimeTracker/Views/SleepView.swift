@@ -7,6 +7,7 @@ struct SleepView: View {
     @State private var showingTimePicker = false
     @State private var selectedAlarmTime = Date()
     @State private var showingStatistics = false
+    @State private var showingWindDownConfig = false
     
     var body: some View {
         ZStack {
@@ -106,6 +107,45 @@ struct SleepView: View {
                     }
                     .padding(.horizontal, 20)
                     
+                    // Wind-Down Configuration Button
+                    Button(action: { showingWindDownConfig = true }) {
+                        HStack(spacing: 12) {
+                            Image(systemName: manager.data.sleepData.windDownEnabled ? "moon.stars.fill" : "moon.stars")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(manager.data.sleepData.windDownEnabled ? .purple : .white.opacity(0.6))
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Wind-Down Phase")
+                                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                                    .foregroundColor(.white)
+                                
+                                if manager.data.sleepData.windDownEnabled,
+                                   let remainingMinutes = manager.getWindDownRemainingTime() {
+                                    Text("Starts in \(remainingMinutes) min")
+                                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                                        .foregroundColor(.purple)
+                                } else {
+                                    Text("Not configured")
+                                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                                        .foregroundColor(.white.opacity(0.5))
+                                }
+                            }
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 14))
+                                .foregroundColor(.white.opacity(0.3))
+                        }
+                        .padding(16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(red: 0.15, green: 0.15, blue: 0.20))
+                                .shadow(color: .black.opacity(0.2), radius: 5, x: 0, y: 3)
+                        )
+                    }
+                    .padding(.horizontal, 20)
+                    
                     WeeklySleepChartView(manager: manager)
                         .frame(height: 200)
                         .padding(.horizontal, 16)
@@ -174,6 +214,9 @@ struct SleepView: View {
         }
         .sheet(isPresented: $showingStatistics) {
             SleepStatisticsView(manager: manager)
+        }
+        .sheet(isPresented: $showingWindDownConfig) {
+            WindDownConfigView(manager: manager)
         }
     }
 }

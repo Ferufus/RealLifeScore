@@ -9,11 +9,15 @@ struct WorkoutDetailView: View {
     @State private var selectedSets: Int = 3
     @State private var selectedReps: Int = 8
     @State private var selectedWeight: Double = 0
+    @State private var selectedExerciseType: ExerciseType = .gym
     
     let muscleGroups = ["Chest", "Back", "Shoulders", "Legs", "Arms", "Core"]
     
     var currentExercises: [Exercise] {
-        manager.data.exercises.filter { $0.muscleGroup == selectedMuscleGroup }
+        manager.data.exercises.filter {
+            $0.muscleGroup == selectedMuscleGroup &&
+            $0.exerciseType == selectedExerciseType
+        }
     }
     
     var body: some View {
@@ -26,13 +30,22 @@ struct WorkoutDetailView: View {
                     .font(.system(size: 24, weight: .bold))
                     .foregroundColor(.white)
                 
+                // NEU: Exercise Type Picker
+                Picker("Exercise Type", selection: $selectedExerciseType) {
+                    Text("Gym").tag(ExerciseType.gym)
+                    Text("Calisthenics").tag(ExerciseType.calisthenics)
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 20)
+                
+                // Bestehender Muscle Group Picker
                 Picker("Muscle Group", selection: $selectedMuscleGroup) {
                     ForEach(muscleGroups, id: \.self) { group in
                         Text(group).tag(group)
                     }
                 }
                 .pickerStyle(.segmented)
-                .padding()
+                .padding(.horizontal, 20)
                 
                 ScrollView {
                     VStack(spacing: 12) {

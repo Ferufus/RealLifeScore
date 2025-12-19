@@ -24,6 +24,18 @@ struct ContentView: View {
                     Label("Sleep", systemImage: "bed.double.fill")
                 }
                 .tag(2)
+            
+            SocialView(manager: manager)
+                .tabItem {
+                    Label("Social", systemImage: "person.2.fill")
+                }
+                .tag(3)
+            
+            HabitsView(manager: manager)
+                .tabItem {
+                    Label("Habits", systemImage: "checkmark.circle.fill")
+                }
+                .tag(4)
         }
         .onChange(of: selectedTab) { oldValue, newValue in
             if newValue != 2 && manager.data.sleepData.isSleeping {

@@ -29,6 +29,7 @@ class TimeTrackerManager: ObservableObject {
         requestNotificationPermission()
         startTimer()
         setupAppStateObservers()
+        scheduleDailyHabitReviewNotification()
     }
     
     // MARK: - App State Management
@@ -181,20 +182,46 @@ class TimeTrackerManager: ObservableObject {
     
     func initializeExercises() {
         if data.exercises.isEmpty {
-            let muscleGroups: [(String, [String])] = [
-                ("Chest", ["Bench Press", "Incline Press", "Cable Fly", "Push-ups"]),
+            // GYM EXERCISES (bestehend)
+            let gymExercises: [(String, [String])] = [
+                ("Chest", ["Bench Press", "Incline Press", "Cable Fly", "Dumbbell Press"]),
                 ("Back", ["Deadlift", "Bent Row", "Pull-up", "Lat Pulldown"]),
                 ("Shoulders", ["Shoulder Press", "Lateral Raise", "Shrug", "Front Raise"]),
                 ("Legs", ["Squat", "Leg Press", "Leg Curl", "Leg Extension"]),
-                ("Arms", ["Bicep Curl", "Tricep Dips", "Hammer Curl", "Overhead Press"]),
+                ("Arms", ["Bicep Curl", "Tricep Dips", "Hammer Curl", "Overhead Extension"]),
                 ("Core", ["Plank", "Ab Wheel", "Cable Crunch", "Russian Twist"])
             ]
             
-            for (group, exercises) in muscleGroups {
+            for (group, exercises) in gymExercises {
                 for exercise in exercises {
-                    data.exercises.append(Exercise(name: exercise, muscleGroup: group))
+                    data.exercises.append(Exercise(
+                        name: exercise,
+                        muscleGroup: group,
+                        exerciseType: .gym
+                    ))
                 }
             }
+            
+            // CALISTHENICS EXERCISES (NEU)
+            let calisthenicsExercises: [(String, [String])] = [
+                ("Chest", ["Push-ups", "Diamond Push-ups", "Decline Push-ups", "Archer Push-ups"]),
+                ("Back", ["Pull-ups", "Chin-ups", "Inverted Rows", "Superman Holds"]),
+                ("Shoulders", ["Pike Push-ups", "Handstand Push-ups", "Plank to Down Dog", "Arm Circles"]),
+                ("Legs", ["Bodyweight Squats", "Lunges", "Bulgarian Split Squats", "Pistol Squats"]),
+                ("Arms", ["Close Grip Push-ups", "Tricep Dips", "Inverted Curls", "Diamond Push-ups"]),
+                ("Core", ["Plank", "Mountain Climbers", "Leg Raises", "Hollow Body Hold"])
+            ]
+            
+            for (group, exercises) in calisthenicsExercises {
+                for exercise in exercises {
+                    data.exercises.append(Exercise(
+                        name: exercise,
+                        muscleGroup: group,
+                        exerciseType: .calisthenics
+                    ))
+                }
+            }
+            
             saveData()
         }
     }
@@ -745,5 +772,348 @@ class TimeTrackerManager: ObservableObject {
         let calendar = Calendar.current
         let hour = calendar.component(.hour, from: Date())
         return hour >= 22 || hour < 6 // 10 PM - 6 AM als Schlafenszeit
+    }
+    
+    // MARK: - Wind-Down Phase Management
+
+    func scheduleWindDown(time: Date, duration: Int) {
+        data.sleepData.windDownEnabled = true
+        data.sleepData.windDownDuration = duration
+        data.sleepData.windDownScheduledTime = time
+        
+        scheduleWindDownNotification(for: time)
+        saveData()
+    }
+
+    func cancelWindDown() {
+        data.sleepData.windDownEnabled = false
+        data.sleepData.windDownScheduledTime = nil
+        
+        if let notificationId = data.sleepData.windDownNotificationId {
+            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [notificationId])
+            data.sleepData.windDownNotificationId = nil
+        }
+        
+        saveData()
+    }
+
+    private func scheduleWindDownNotification(for time: Date) {
+        // Cancel existing notification
+        if let existingId = data.sleepData.windDownNotificationId {
+            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [existingId])
+        }
+        
+        let notificationId = "windDown_\(UUID().uuidString)"
+        data.sleepData.windDownNotificationId = notificationId
+        
+        let content = UNMutableNotificationContent()
+        content.title = "🌙 Wind-Down Time"
+        content.body = "Time to start winding down for better sleep. Consider dimming lights and avoiding screens."
+        content.sound = .default
+        content.categoryIdentifier = "WIND_DOWN"
+        
+        var targetDate = time
+        let calendar = Calendar.current
+        let now = Date()
+        
+        // If time is in the past, schedule for tomorrow
+        if time <= now {
+            targetDate = calendar.date(byAdding: .day, value: 1, to: time)!
+        }
+        
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: targetDate)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+        
+        let request = UNNotificationRequest(identifier: notificationId, content: content, trigger: trigger)
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error scheduling wind-down notification: \(error.localizedDescription)")
+            } else {
+                print("Wind-down notification scheduled for \(targetDate)")
+            }
+        }
+    }
+
+    func getWindDownRemainingTime() -> Int? {
+        guard data.sleepData.windDownEnabled,
+              let scheduledTime = data.sleepData.windDownScheduledTime else {
+            return nil
+        }
+        
+        let now = Date()
+        let calendar = Calendar.current
+        
+        // Get today's wind-down time
+        var components = calendar.dateComponents([.year, .month, .day], from: now)
+        let timeComponents = calendar.dateComponents([.hour, .minute], from: scheduledTime)
+        components.hour = timeComponents.hour
+        components.minute = timeComponents.minute
+        
+        guard var todayWindDown = calendar.date(from: components) else { return nil }
+        
+        // If time has passed, calculate for tomorrow
+        if todayWindDown < now {
+            todayWindDown = calendar.date(byAdding: .day, value: 1, to: todayWindDown)!
+        }
+        
+        return Int(todayWindDown.timeIntervalSince(now) / 60) // Minutes
+    }
+    
+    // MARK: - Contact Management
+
+    func addContact(name: String, phoneNumber: String?, contactClass: ContactClass) -> ContactProfile {
+        let contact = ContactProfile(
+            name: name,
+            phoneNumber: phoneNumber,
+            contactClass: contactClass
+        )
+        data.contacts.append(contact)
+        saveData()
+        return contact
+    }
+
+    func updateContact(_ contact: ContactProfile) {
+        if let index = data.contacts.firstIndex(where: { $0.id == contact.id }) {
+            data.contacts[index] = contact
+            saveData()
+        }
+    }
+
+    func deleteContact(id: String) {
+        // Cancel all scheduled calls for this contact
+        if let contact = data.contacts.first(where: { $0.id == id }) {
+            for call in contact.scheduledCalls {
+                if let notificationId = call.notificationId {
+                    UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [notificationId])
+                }
+            }
+        }
+        
+        data.contacts.removeAll { $0.id == id }
+        saveData()
+    }
+
+    func scheduleCall(contactId: String, time: Date, note: String) {
+        guard let contactIndex = data.contacts.firstIndex(where: { $0.id == contactId }) else { return }
+        
+        let notificationId = "call_\(contactId)_\(UUID().uuidString)"
+        
+        var scheduledCall = ScheduledCall(
+            contactId: contactId,
+            scheduledTime: time,
+            note: note,
+            notificationId: notificationId
+        )
+        
+        data.contacts[contactIndex].scheduledCalls.append(scheduledCall)
+        
+        // Schedule notification
+        scheduleCallNotification(for: scheduledCall, contactName: data.contacts[contactIndex].name)
+        
+        saveData()
+    }
+
+    private func scheduleCallNotification(for call: ScheduledCall, contactName: String) {
+        guard let notificationId = call.notificationId else { return }
+        
+        let content = UNMutableNotificationContent()
+        content.title = "📞 Call Reminder"
+        content.body = "Time to call \(contactName)"
+        if !call.note.isEmpty {
+            content.body += " – \(call.note)"
+        }
+        content.sound = .default
+        content.categoryIdentifier = "CALL_REMINDER"
+        content.userInfo = ["contactId": call.contactId, "callId": call.id]
+        
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: call.scheduledTime)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        
+        let request = UNNotificationRequest(identifier: notificationId, content: content, trigger: trigger)
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error scheduling call notification: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    func completeCall(contactId: String, callId: String) {
+        guard let contactIndex = data.contacts.firstIndex(where: { $0.id == contactId }),
+              let callIndex = data.contacts[contactIndex].scheduledCalls.firstIndex(where: { $0.id == callId }) else {
+            return
+        }
+        
+        data.contacts[contactIndex].scheduledCalls[callIndex].completed = true
+        data.contacts[contactIndex].lastContact = Date()
+        
+        // Remove notification
+        if let notificationId = data.contacts[contactIndex].scheduledCalls[callIndex].notificationId {
+            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [notificationId])
+        }
+        
+        saveData()
+    }
+
+    func deleteScheduledCall(contactId: String, callId: String) {
+        guard let contactIndex = data.contacts.firstIndex(where: { $0.id == contactId }),
+              let callIndex = data.contacts[contactIndex].scheduledCalls.firstIndex(where: { $0.id == callId }) else {
+            return
+        }
+        
+        // Remove notification
+        if let notificationId = data.contacts[contactIndex].scheduledCalls[callIndex].notificationId {
+            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [notificationId])
+        }
+        
+        data.contacts[contactIndex].scheduledCalls.remove(at: callIndex)
+        saveData()
+    }
+
+    func getUpcomingCalls() -> [(contact: ContactProfile, call: ScheduledCall)] {
+        var upcomingCalls: [(contact: ContactProfile, call: ScheduledCall)] = []
+        
+        for contact in data.contacts {
+            let futureCalls = contact.scheduledCalls.filter { !$0.completed && $0.scheduledTime > Date() }
+            for call in futureCalls {
+                upcomingCalls.append((contact, call))
+            }
+        }
+        
+        return upcomingCalls.sorted { $0.call.scheduledTime < $1.call.scheduledTime }
+    }
+    
+    // MARK: - Habit Management
+
+    func addHabit(name: String, description: String, type: HabitType) -> Habit {
+        let habit = Habit(
+            name: name,
+            description: description,
+            type: type
+        )
+        data.habits.append(habit)
+        saveData()
+        return habit
+    }
+
+    func updateHabit(_ habit: Habit) {
+        if let index = data.habits.firstIndex(where: { $0.id == habit.id }) {
+            data.habits[index] = habit
+            saveData()
+        }
+    }
+
+    func deleteHabit(id: String) {
+        // Cancel notification if enabled
+        if let habit = data.habits.first(where: { $0.id == id }),
+           let notificationId = habit.notificationId {
+            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [notificationId])
+        }
+        
+        data.habits.removeAll { $0.id == id }
+        saveData()
+    }
+
+    func toggleHabitEntry(habitId: String, date: Date) {
+        guard let habitIndex = data.habits.firstIndex(where: { $0.id == habitId }) else { return }
+        
+        let calendar = Calendar.current
+        let dateStart = calendar.startOfDay(for: date)
+        
+        // Check if entry exists for this date
+        if let entryIndex = data.habits[habitIndex].entries.firstIndex(where: {
+            calendar.isDate($0.date, inSameDayAs: dateStart)
+        }) {
+            // Toggle existing entry
+            data.habits[habitIndex].entries[entryIndex].completed.toggle()
+        } else {
+            // Create new entry
+            let entry = HabitEntry(habitId: habitId, date: dateStart, completed: true)
+            data.habits[habitIndex].entries.append(entry)
+        }
+        
+        saveData()
+    }
+
+    func getHabitEntry(habitId: String, date: Date) -> HabitEntry? {
+        guard let habit = data.habits.first(where: { $0.id == habitId }) else { return nil }
+        
+        let calendar = Calendar.current
+        return habit.entries.first { calendar.isDate($0.date, inSameDayAs: date) }
+    }
+
+    func scheduleHabitReminder(habitId: String, time: Date) {
+        guard let habitIndex = data.habits.firstIndex(where: { $0.id == habitId }) else { return }
+        
+        // Cancel existing notification
+        if let existingId = data.habits[habitIndex].notificationId {
+            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [existingId])
+        }
+        
+        let notificationId = "habit_\(habitId)_\(UUID().uuidString)"
+        data.habits[habitIndex].notificationId = notificationId
+        data.habits[habitIndex].reminderEnabled = true
+        data.habits[habitIndex].reminderTime = time
+        
+        let content = UNMutableNotificationContent()
+        content.title = "🎯 Habit Reminder"
+        content.body = "Don't forget: \(data.habits[habitIndex].name)"
+        content.sound = .default
+        content.categoryIdentifier = "HABIT_REMINDER"
+        content.userInfo = ["habitId": habitId]
+        
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.hour, .minute], from: time)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+        
+        let request = UNNotificationRequest(identifier: notificationId, content: content, trigger: trigger)
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error scheduling habit reminder: \(error.localizedDescription)")
+            }
+        }
+        
+        saveData()
+    }
+
+    func cancelHabitReminder(habitId: String) {
+        guard let habitIndex = data.habits.firstIndex(where: { $0.id == habitId }) else { return }
+        
+        if let notificationId = data.habits[habitIndex].notificationId {
+            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [notificationId])
+        }
+        
+        data.habits[habitIndex].reminderEnabled = false
+        data.habits[habitIndex].reminderTime = nil
+        data.habits[habitIndex].notificationId = nil
+        
+        saveData()
+    }
+
+    func scheduleDailyHabitReviewNotification() {
+        // Cancel existing notification
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["daily_habit_review"])
+        
+        let content = UNMutableNotificationContent()
+        content.title = "✅ Daily Habit Check"
+        content.body = "Take a moment to review your habits from yesterday"
+        content.sound = .default
+        content.categoryIdentifier = "HABIT_REVIEW"
+        
+        var components = DateComponents()
+        components.hour = 8 // 8 AM
+        components.minute = 0
+        
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+        let request = UNNotificationRequest(identifier: "daily_habit_review", content: content, trigger: trigger)
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error scheduling daily habit review: \(error.localizedDescription)")
+            }
+        }
     }
 }
